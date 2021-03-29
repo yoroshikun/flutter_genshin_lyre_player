@@ -1,34 +1,38 @@
 import 'dart:io';
-import 'package:dart_midi/dart_midi.dart';
+import 'dart:ffi';
+
+import 'dart_midi/dart_midi.dart';
+import 'package:ffi/ffi.dart';
+import 'package:win32/win32.dart';
 
 class MidiPlayer {
   final letter = {
-    'a': 65,
-    'b': 66,
-    'c': 67,
-    'd': 68,
-    'e': 69,
-    'f': 70,
-    'g': 71,
-    'h': 72,
-    'i': 73,
-    'j': 74,
-    'k': 75,
-    'l': 76,
-    'm': 77,
-    'n': 78,
-    'o': 79,
-    'p': 80,
-    'q': 81,
-    'r': 82,
-    's': 83,
-    't': 84,
-    'u': 85,
-    'v': 86,
-    'w': 87,
-    'x': 88,
-    'y': 89,
-    'z': 90
+    'a': 0x41,
+    'b': 0x42,
+    'c': 0x43,
+    'd': 0x44,
+    'e': 0x45,
+    'f': 0x46,
+    'g': 0x47,
+    'h': 0x48,
+    'i': 0x49,
+    'j': 0x4A,
+    'k': 0x4B,
+    'l': 0x4C,
+    'm': 0x4D,
+    'n': 0x4E,
+    'o': 0x4F,
+    'p': 0x50,
+    'q': 0x51,
+    'r': 0x52,
+    's': 0x53,
+    't': 0x54,
+    'u': 0x55,
+    'v': 0x56,
+    'w': 0x57,
+    'x': 0x58,
+    'y': 0x59,
+    'z': 0x5A
   };
   final mapping = {
     '48': 'z',
@@ -58,20 +62,21 @@ class MidiPlayer {
   int tick_accuracy = 0;
   int bpm = 0;
   int seek = 0;
-  int delay = 4000;
+  int delay = 10000;
+  late Pointer<INPUT> kbd;
 
-  // Unused Code ?
-  // Map<String, int> _dinput() {
-  //   final Map<String, int> a = {};
-  //   int count = 36;
+  // Unused Code ? Debug?
+  Map<String, int> _dinput() {
+    final Map<String, int> a = {};
+    int count = 36;
 
-  //   while (count <= 84) {
-  //     a[count.toString()] = input();
-  //     count++;
-  //   }
+    while (count <= 84) {
+      // a[count.toString()] = input();
+      count++;
+    }
 
-  //   return a;
-  // }
+    return a;
+  }
 
   List<dynamic> _find(List<dynamic> arr, int time) {
     final List<dynamic> result = <dynamic>[];
@@ -87,15 +92,25 @@ class MidiPlayer {
 
   void _press(String note) {
     // 48 to 83
-    if (mapping.keys.contains(note)) {
-      // win32api.keybd_event(letter[mapping[note]], 0, 0, 0)
+    final key = letter[mapping[note]];
+
+    if (key != null) {
+      kbd.ki.wVk = key;
+      final result = SendInput(1, kbd, sizeOf<INPUT>());
+      if (result != TRUE)
+        print('Error: ${GetLastError()}'); // todo: Custom error handler
     }
   }
 
   void _unpress(String note) {
     // 48 to 83
-    if (mapping.keys.contains(note)) {
-      // win32api.keybd_event(letter[mapping[note]], 0, win32con.KEYEVENTF_KEYUP, 0)
+    final key = letter[mapping[note]];
+
+    if (key != null) {
+      kbd.ki.dwFlags = KEYEVENTF_KEYUP;
+      final result = SendInput(1, kbd, sizeOf<INPUT>());
+      if (result != TRUE)
+        print('Error: ${GetLastError()}'); // todo: Custom error handler
     }
   }
 
@@ -108,8 +123,13 @@ class MidiPlayer {
   }
 
   void play() {
+    playing = true;
     // print("Song will start playing in " + str(stime) + " seconds, please be prepared to switch over to Genshin Impact.")
     sleep(Duration(milliseconds: delay));
+
+    // Allocate memory for keyboard control
+    kbd = calloc<INPUT>();
+    kbd.ref.type = INPUT_KEYBOARD;
 
     // Player
     //   for i in range(mmax):
@@ -119,10 +139,11 @@ class MidiPlayer {
     // for note in start[str(i)]:
     // 	press(str(note))
     // time.sleep(0.025)
-    playing = true;
   }
 
   void pause() {
+    // Free memory for keyboard control
+    free(kbd);
     playing = false;
   }
 

@@ -3,6 +3,8 @@ analyzer:
   exclude:
     # ignore warnings in files from most generators
     - "**/*.g.dart"
+    # ignore lib
+    - "**/lib/dart_midi/**/*"
   strong-mode:
     implicit-casts: false
     implicit-dynamic: false

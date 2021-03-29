@@ -23,7 +23,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dart_midi: ^1.0.1
   filepicker_windows: ^2.0.0
   win32: ^2.0.5
 
