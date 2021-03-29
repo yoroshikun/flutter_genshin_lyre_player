@@ -1,0 +1,8 @@
+include: all_lint_rules.yaml
+analyzer:
+  exclude:
+    # ignore warnings in files from most generators
+    - "**/*.g.dart"
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
