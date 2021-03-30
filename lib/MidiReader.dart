@@ -1,12 +1,13 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart_midi/dart_midi.dart';
-
-const type = ['note_on', 'note_off'];
 
 class MidiReader {
   late MidiFile midiObject;
   late File midiFile;
+  int midiLength = 0;
   double tickAccuracy = 0.0;
+  final List<Map<String, int>> playTracks = [];
 
   MidiReader(File file) {
     midiFile = file;
@@ -44,47 +45,38 @@ class MidiReader {
 
     // Start Converting Tracks
 
-    List<dynamic> tracks;
-    List<dynamic> end_track;
+    final List<Map<String, int>> tracks = [];
+    final List<Map<String, int>> endTracks = [];
 
     midiObject.tracks.toList().asMap().forEach((i, track) {
-      int last_time = 0;
-      int last_on = 0;
+      int lastTime = 0;
+      int lastOn = 0;
+
       for (final message in track) {
-        Map<String, dynamic> info;
-        // message
+        final Map<String, int> info = <String, int>{};
+
+        info['pertime'] = message.deltaTime;
+        info['time'] = lastTime;
+        if (message is NoteOnEvent || message is NoteOffEvent) {
+          info['time'] = (info['time']! / tickAccuracy).round();
+          lastOn = info['time']!;
+
+          if (message is NoteOnEvent) {
+            tracks.add(info);
+          }
+          if (message is NoteOffEvent) {
+            endTracks.add(info);
+          }
+        }
       }
+    });
+
+    endTracks.forEach((track) {
+      midiLength = max(midiLength, track['time']! + 1);
+    });
+
+    List<int>.generate(midiLength, (i) => i + 1).forEach((index) {
+      playTracks[index] = tracks[index];
     });
   }
 }
-
-// for i,track in enumerate(midi_object.tracks):
-// 	print(f'track{i}')
-// 	last_time = 0
-// 	last_on = 0
-// 	for msg in track:
-// 		info = msg.dict()
-// 		info['pertime'] = info['time']
-// 		info['time'] += last_time
-// 		last_time = info['time']
-// 		if (info['type'] in type):
-// 			del info['channel']
-// 			del info['velocity']
-// 			info['time'] = round(info['time'] / tick_accuracy)
-// 			if info['type'] == 'note_on':
-// 				del info['type']
-// 				del info['pertime']
-// 				last_on = info['time']
-// 				tracks.append(info)
-// 			else:
-// 				del info['type']
-// 				del info['pertime']
-// 				last_on = info['time']
-// 				end_track.append(info)
-// mmax = 0
-// for i in end_track:
-// 	mmax = max(mmax, i['time'] + 1)
-// start = {}
-// print("Start converting the score...")
-// for i in range(mmax):
-// 	start[str(i)] = find(tracks, i)

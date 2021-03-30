@@ -1,16 +1,17 @@
-# flutter_genshin_lyre
+## Flutter Genshin Lyre Auto Player
 
-A new Flutter project.
+A native flutter implementation of a midi to genshin lyre player. With a fully functional UI and no pre-requisits or coding experience required.
 
-## Getting Started
+## How to use
 
-This project is a starting point for a Flutter application.
+1. Download the latest release from the releases tab (.exe)
+2. Run the program in administrator mode (this is required for consistent keyboard controls)
+3. Open the .mid file you would like to player
+4. Adjust the settings as you preffer
+5. Click play to start playback (please ensure you are in the genshin window when playback starts)
 
-A few resources to get you started if this is your first Flutter project:
+> The UI will get better with time, I had to rush to put it all together
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+### Contributing
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+This project was hastily written with flutter and dart, if you want to contribute your knowledge please do so! I am still very new to OOP and flutter and would love feedback and contributions from the community.

@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:filepicker_windows/filepicker_windows.dart';
 
 import 'MidiReader.dart';
+import 'MidiPlayer.dart';
 
 void main() {
   runApp(MyApp());
@@ -12,58 +14,63 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.purple,
+    return ChangeNotifierProvider<ThemeModel>(
+      create: (_) => ThemeModel(),
+      child: Consumer<ThemeModel>(
+        builder: (_, model, __) {
+          return MaterialApp(
+            title: 'Genshin Auto Lyre',
+            theme: ThemeData(
+              primarySwatch: Colors.purple,
+            ),
+            darkTheme: ThemeData(
+              primarySwatch: Colors.deepPurple,
+              canvasColor: Colors.grey[850],
+              backgroundColor: Colors.grey[850],
+              textTheme: TextTheme(headline5: TextStyle(color: Colors.white)),
+              floatingActionButtonTheme: FloatingActionButtonThemeData(
+                  backgroundColor: Colors.deepPurpleAccent),
+            ),
+            themeMode: model.mode,
+            home: MyHomePage(
+                title: 'Genshin Auto Lyre',
+                theme: model._mode,
+                toggleMode: model.toggleMode),
+          );
+        },
       ),
-      home: const MyHomePage(title: 'Genshin Auto Lyre'),
     );
   }
 }
 
+class ThemeModel with ChangeNotifier {
+  ThemeMode _mode;
+  ThemeMode get mode => _mode;
+  ThemeModel({ThemeMode mode = ThemeMode.light}) : _mode = mode;
+
+  void toggleMode() {
+    _mode = _mode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+}
+
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  const MyHomePage({Key? key, this.title, this.theme, this.toggleMode})
+      : super(key: key);
 
   final String? title;
+  final ThemeMode? theme;
+  final Function()? toggleMode;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  bool fileSelectError = false;
   MidiReader? _reader;
+  MidiPlayer? _player;
   File? file;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
 
   void _openMidi() {
     final pickerFile = OpenFilePicker()
@@ -81,17 +88,43 @@ class _MyHomePageState extends State<MyHomePage> {
         _reader = reader;
       });
     } else {
-      // Handle showing the file was not selected
+      setState(() {
+        fileSelectError = true;
+      });
     }
   }
 
   Widget welcomeChild(BuildContext context) => Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Text(
-            'Load a midi by clicking the file icon below',
-            style: Theme.of(context).textTheme.headline5,
-          )
+          GestureDetector(
+            onTap: () {
+              print('hi');
+            }, // Open dialog for midi selection
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.all(Radius.circular(16))),
+              child: SizedBox(
+                width: 320,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    Text(
+                      'Click to load a midi',
+                      style: Theme.of(context).textTheme.headline5,
+                    ),
+                    Icon(
+                      Icons.folder,
+                      color: Colors.grey,
+                      size: 36.0,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       );
 
@@ -132,9 +165,11 @@ class _MyHomePageState extends State<MyHomePage> {
           child:
               _reader == null ? welcomeChild(context) : loadedChild(context)),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openMidi,
+        onPressed: widget.toggleMode,
         tooltip: 'Open Midi',
-        child: const Icon(Icons.folder),
+        child: widget.theme == ThemeMode.light
+            ? const Icon(Icons.bedtime)
+            : const Icon(Icons.wb_sunny),
       ),
     );
   }
