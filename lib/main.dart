@@ -82,8 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
   File? file;
   bool _playing = false;
   int _playerPosition = 0;
-  int _testMode = 0;
-  List<List<int>> _playTracks = [];
+  bool _testMode = false;
 
   void _openMidi() {
     final pickerFile = OpenFilePicker()
@@ -135,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _startPlayer(int position) {
-    _player?.play(true);
+    _player?.play(_testMode);
     setState(() => _playing = true);
   }
 
@@ -220,54 +219,70 @@ class _MyHomePageState extends State<MyHomePage> {
                     style: Theme.of(context).textTheme.bodyText1),
               ],
             ),
+            Text('Test Mode: $_testMode',
+                style: Theme.of(context).textTheme.bodyText1),
             Text('Playing: $_playing',
                 style: Theme.of(context).textTheme.bodyText1),
             SizedBox(height: 10),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: <
-                Widget>[
-              Column(
-                children: [
-                  ElevatedButton.icon(
-                    label: const Text('Play', style: TextStyle(fontSize: 18)),
-                    icon: const Icon(Icons.play_arrow),
-                    style: _playing
-                        ? ElevatedButton.styleFrom(primary: Colors.grey[400])
-                        : ElevatedButton.styleFrom(primary: Colors.green),
-                    onPressed: () async =>
-                        _playing ? null : _startPlayer(_playerPosition),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton.icon(
-                    label: const Text('Pause', style: TextStyle(fontSize: 18)),
-                    icon: const Icon(Icons.pause),
-                    onPressed: () async => _playing ? _pausePlayer() : null,
-                    style: _playing
-                        ? ElevatedButton.styleFrom(
-                            primary: Colors.blueGrey[400])
-                        : ElevatedButton.styleFrom(primary: Colors.grey[400]),
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  ElevatedButton.icon(
-                    label: const Text('Reset', style: TextStyle(fontSize: 18)),
-                    icon: const Icon(Icons.settings_backup_restore_outlined),
-                    onPressed: () async => _playing ? _resetPlayer() : null,
-                    style: _playing
-                        ? ElevatedButton.styleFrom(primary: Colors.orange[400])
-                        : ElevatedButton.styleFrom(primary: Colors.grey[400]),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton.icon(
-                    label: const Text('Clear', style: TextStyle(fontSize: 18)),
-                    icon: const Icon(Icons.restore_from_trash_rounded),
-                    onPressed: () async => _clear(),
-                    style: ElevatedButton.styleFrom(primary: Colors.red[400]),
-                  ),
-                ],
-              ),
-            ]),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                Column(
+                  children: [
+                    ElevatedButton.icon(
+                      label: const Text('Play', style: TextStyle(fontSize: 18)),
+                      icon: const Icon(Icons.play_arrow),
+                      style: _playing
+                          ? ElevatedButton.styleFrom(primary: Colors.grey[400])
+                          : ElevatedButton.styleFrom(primary: Colors.green),
+                      onPressed: () async =>
+                          _playing ? null : _startPlayer(_playerPosition),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      label:
+                          const Text('Pause', style: TextStyle(fontSize: 18)),
+                      icon: const Icon(Icons.pause),
+                      onPressed: () async => _playing ? _pausePlayer() : null,
+                      style: _playing
+                          ? ElevatedButton.styleFrom(
+                              primary: Colors.blueGrey[400])
+                          : ElevatedButton.styleFrom(primary: Colors.grey[400]),
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    ElevatedButton.icon(
+                      label:
+                          const Text('Reset', style: TextStyle(fontSize: 18)),
+                      icon: const Icon(Icons.settings_backup_restore_outlined),
+                      onPressed: () async => _playing ? _resetPlayer() : null,
+                      style: _playing
+                          ? ElevatedButton.styleFrom(
+                              primary: Colors.orange[400])
+                          : ElevatedButton.styleFrom(primary: Colors.grey[400]),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      label:
+                          const Text('Clear', style: TextStyle(fontSize: 18)),
+                      icon: const Icon(Icons.restore_from_trash_rounded),
+                      onPressed: () async => _clear(),
+                      style: ElevatedButton.styleFrom(primary: Colors.red[400]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            ElevatedButton.icon(
+              label: const Text('Toggle Test Mode',
+                  style: TextStyle(fontSize: 18)),
+              icon: const Icon(Icons.text_snippet),
+              onPressed: () => setState(() => _testMode = !_testMode),
+              style: ElevatedButton.styleFrom(primary: Colors.red[400]),
+            ),
           ],
         ),
       );
@@ -279,11 +294,27 @@ class _MyHomePageState extends State<MyHomePage> {
       //   title: Text(widget.title!),
       // ),
       body: Center(
-          child:
-              _reader == null ? welcomeChild(context) : loadedChild(context)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            _reader == null ? welcomeChild(context) : loadedChild(context),
+            SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.all(Radius.circular(6))),
+              child: Text(
+                  'Made with <3 by Yoroshi and the open source community',
+                  style: Theme.of(context).textTheme.bodyText1),
+            ),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: widget.toggleMode,
-        tooltip: 'Open Midi',
+        tooltip: 'Toggle Dark Mode',
         child: widget.theme == ThemeMode.light
             ? const Icon(Icons.bedtime)
             : const Icon(Icons.wb_sunny),
