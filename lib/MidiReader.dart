@@ -7,7 +7,19 @@ class MidiReader {
   late File midiFile;
   int midiLength = 0;
   double tickAccuracy = 0.0;
-  final List<Map<String, int>> playTracks = [];
+  final List<List<int>> playTracks = [];
+
+  List<int> _find(List<dynamic> arr, int time) {
+    final List<int> result = <int>[];
+
+    for (final i in arr) {
+      if (i["time"] == time) {
+        result.add(i["note"] as int);
+      }
+    }
+
+    return result;
+  }
 
   MidiReader(File file) {
     midiFile = file;
@@ -55,16 +67,20 @@ class MidiReader {
       for (final message in track) {
         final Map<String, int> info = <String, int>{};
 
-        info['pertime'] = message.deltaTime;
-        info['time'] = lastTime;
+        info['pertime'] = message.deltaTime; // Is per time used
+        info['time'] = message.deltaTime + lastTime;
+        lastTime = info['time']!;
+
         if (message is NoteOnEvent || message is NoteOffEvent) {
           info['time'] = (info['time']! / tickAccuracy).round();
           lastOn = info['time']!;
 
           if (message is NoteOnEvent) {
+            info['note'] = message.noteNumber;
             tracks.add(info);
           }
           if (message is NoteOffEvent) {
+            info['note'] = message.noteNumber;
             endTracks.add(info);
           }
         }
@@ -75,8 +91,9 @@ class MidiReader {
       midiLength = max(midiLength, track['time']! + 1);
     });
 
-    List<int>.generate(midiLength, (i) => i + 1).forEach((index) {
-      playTracks[index] = tracks[index];
+    List<int>.generate(midiLength, (i) => i).forEach((index) {
+      final result = _find(tracks, index);
+      playTracks.add(result);
     });
   }
 }

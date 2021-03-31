@@ -21,13 +21,22 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Genshin Auto Lyre',
             theme: ThemeData(
-              primarySwatch: Colors.purple,
+              primarySwatch: Colors.blue,
             ),
             darkTheme: ThemeData(
               primarySwatch: Colors.deepPurple,
               canvasColor: Colors.grey[850],
               backgroundColor: Colors.grey[850],
-              textTheme: TextTheme(headline5: TextStyle(color: Colors.white)),
+              textTheme: TextTheme(
+                headline1: TextStyle(color: Colors.white),
+                headline2: TextStyle(color: Colors.white),
+                headline3: TextStyle(color: Colors.white),
+                headline4: TextStyle(color: Colors.white),
+                headline5: TextStyle(color: Colors.white),
+                headline6: TextStyle(color: Colors.white),
+                bodyText1: TextStyle(color: Colors.white),
+                bodyText2: TextStyle(color: Colors.white),
+              ),
               floatingActionButtonTheme: FloatingActionButtonThemeData(
                   backgroundColor: Colors.deepPurpleAccent),
             ),
@@ -71,6 +80,10 @@ class _MyHomePageState extends State<MyHomePage> {
   MidiReader? _reader;
   MidiPlayer? _player;
   File? file;
+  bool _playing = false;
+  int _playerPosition = 0;
+  int _testMode = 0;
+  List<List<int>> _playTracks = [];
 
   void _openMidi() {
     final pickerFile = OpenFilePicker()
@@ -82,10 +95,17 @@ class _MyHomePageState extends State<MyHomePage> {
     final result = pickerFile.getFile();
 
     if (result != null) {
-      final file = File('/Users/Yoroshi/Downloads/m64wings.mid');
+      final file = File(result.path);
       final reader = MidiReader(file);
+
       setState(() {
         _reader = reader;
+      });
+      final player = MidiPlayer(reader.midiLength, reader.tickAccuracy,
+          reader.playTracks, _updatePosition);
+
+      setState(() {
+        _player = player;
       });
     } else {
       setState(() {
@@ -94,12 +114,41 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _clear() {
+    _player?.reset();
+    setState(() {
+      _playing = false;
+      _playerPosition = 0;
+      _reader = null;
+      _player = null;
+    });
+  }
+
+  void _resetPlayer() {
+    _player?.reset();
+    setState(() => {_playerPosition = 0, _playing = false});
+  }
+
+  void _pausePlayer() {
+    _player?.pause();
+    setState(() => _playing = false);
+  }
+
+  void _startPlayer(int position) {
+    _player?.play(true);
+    setState(() => _playing = true);
+  }
+
+  void _updatePosition(int position) {
+    setState(() => _playerPosition = position);
+  }
+
   Widget welcomeChild(BuildContext context) => Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           GestureDetector(
             onTap: () {
-              print('hi');
+              _openMidi();
             }, // Open dialog for midi selection
             child: Container(
               padding: const EdgeInsets.all(16.0),
@@ -128,39 +177,103 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       );
 
-  Widget loadedChild(BuildContext context) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Row(children: [
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Speed',
-                ),
-              ),
+  Widget loadedChild(BuildContext context) => SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'Loaded Midi: ${_reader?.midiFile.path.split("\\").removeLast().replaceFirst('.mid', '')}', // Name can be set by reader
+              style: Theme.of(context).textTheme.headline5,
             ),
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Length',
-                ),
+            SizedBox(height: 20),
+            Text(
+              'midi info', // Name can be set by reader
+              style: Theme.of(context).textTheme.headline6,
+            ),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text('Length: ${_reader?.midiLength} notes',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyText1), // Change to seconds
+                SizedBox(width: 10),
+                Text('Position: note ${_player?.position}',
+                    style: Theme.of(context).textTheme.bodyText1),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text('Speed: ${_reader?.tickAccuracy}',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyText1), // Change to seconds
+                SizedBox(width: 10),
+                Text('Delay: ${_player?.delay} milliseconds',
+                    style: Theme.of(context).textTheme.bodyText1),
+              ],
+            ),
+            Text('Playing: $_playing',
+                style: Theme.of(context).textTheme.bodyText1),
+            SizedBox(height: 10),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: <
+                Widget>[
+              Column(
+                children: [
+                  ElevatedButton.icon(
+                    label: const Text('Play', style: TextStyle(fontSize: 18)),
+                    icon: const Icon(Icons.play_arrow),
+                    style: _playing
+                        ? ElevatedButton.styleFrom(primary: Colors.grey[400])
+                        : ElevatedButton.styleFrom(primary: Colors.green),
+                    onPressed: () async =>
+                        _playing ? null : _startPlayer(_playerPosition),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    label: const Text('Pause', style: TextStyle(fontSize: 18)),
+                    icon: const Icon(Icons.pause),
+                    onPressed: () async => _playing ? _pausePlayer() : null,
+                    style: _playing
+                        ? ElevatedButton.styleFrom(
+                            primary: Colors.blueGrey[400])
+                        : ElevatedButton.styleFrom(primary: Colors.grey[400]),
+                  ),
+                ],
               ),
-            )
-          ]),
-          ElevatedButton(
-              onPressed: () => null,
-              child: const Text('Play', style: TextStyle(fontSize: 18)))
-        ],
+              Column(
+                children: [
+                  ElevatedButton.icon(
+                    label: const Text('Reset', style: TextStyle(fontSize: 18)),
+                    icon: const Icon(Icons.settings_backup_restore_outlined),
+                    onPressed: () async => _playing ? _resetPlayer() : null,
+                    style: _playing
+                        ? ElevatedButton.styleFrom(primary: Colors.orange[400])
+                        : ElevatedButton.styleFrom(primary: Colors.grey[400]),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    label: const Text('Clear', style: TextStyle(fontSize: 18)),
+                    icon: const Icon(Icons.restore_from_trash_rounded),
+                    onPressed: () async => _clear(),
+                    style: ElevatedButton.styleFrom(primary: Colors.red[400]),
+                  ),
+                ],
+              ),
+            ]),
+          ],
+        ),
       );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title!),
-      ),
+      // appBar: AppBar(
+      //   title: Text(widget.title!),
+      // ),
       body: Center(
           child:
               _reader == null ? welcomeChild(context) : loadedChild(context)),

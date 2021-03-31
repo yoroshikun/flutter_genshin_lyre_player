@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'dart:ffi';
-import 'dart:io';
+import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
@@ -56,16 +57,89 @@ const mapping = {
   '83': 'u'
 };
 
+void _press(String note, Pointer<INPUT> kbd) {
+  // Make these return an error so we can tell the user
+  // 48 to 83
+  final key = letter[mapping[note]];
+
+  if (key != null) {
+    kbd.ki.dwFlags = 0;
+    kbd.ki.wVk = key;
+    final result = SendInput(1, kbd, sizeOf<INPUT>());
+    if (result != TRUE)
+      print('Error: ${GetLastError()}'); // todo: Custom error handler
+  }
+}
+
+void _unpress(String note, Pointer<INPUT> kbd) {
+  // Make these return an error so we can tell the user
+  // 48 to 83
+  final key = letter[mapping[note]];
+
+  if (key != null) {
+    kbd.ki.dwFlags = KEYEVENTF_KEYUP;
+    final result = SendInput(1, kbd, sizeOf<INPUT>());
+    if (result != TRUE)
+      print('Error: ${GetLastError()}'); // todo: Custom error handler
+  }
+}
+
+// Player Isolate
+void playerIsolate(SendPort isolateToMainStream) {
+  final ReceivePort mainToIsolateStream = ReceivePort();
+  isolateToMainStream.send(mainToIsolateStream.sendPort);
+
+  mainToIsolateStream.listen((dynamic data) {
+    final int resumePosition = data['position'] as int;
+    final int midiLength = data['midiLength'] as int;
+    final List<List<int>> playTracks = data['playTracks'] as List<List<int>>;
+
+    // Allocate pointer for keyboard control
+    final Pointer<INPUT> kbd = calloc<INPUT>();
+    kbd.ref.type = INPUT_KEYBOARD;
+
+    for (final index
+        in List<int>.generate(midiLength - resumePosition, (i) => i)) {
+      List<int> previousTrack = [];
+
+      if (index != 0) {
+        previousTrack = playTracks[(index + resumePosition) - 1];
+      }
+
+      final List<int> currentTrack = playTracks[(index + resumePosition)];
+
+      for (final note in previousTrack) {
+        _unpress(note.toString(), kbd);
+      }
+
+      for (final note in currentTrack) {
+        _press(note.toString(), kbd);
+      }
+
+      Map<String, int> sendData = {};
+      sendData['position'] = index + resumePosition;
+      isolateToMainStream.send(sendData);
+      Sleep(25);
+    }
+
+    // Free pointer for keyboard control once we are done with playing
+    free(kbd);
+  });
+}
+
 class MidiPlayer {
   bool playing = false;
   int position = 0;
   int delay = 10000;
   int midiLength = 0;
-  double tickAccuracy = 0.0;
-  List<Map<String, int>> playTracks = [];
-  late Pointer<INPUT> kbd;
+  double tickAccuracy = 0.0; // Is tickAccuracy needed here?
+  List<List<int>> playTracks = [];
+  void Function(int) _updatePosition;
+  late SendPort mainToIsolateStream;
+  Isolate? playerInstance;
 
-  MidiPlayer(this.midiLength, this.tickAccuracy, this.playTracks);
+  MidiPlayer(this.midiLength, this.tickAccuracy, this.playTracks,
+      this._updatePosition);
 
   // Unused Code ? Debug?
   Map<String, int> _dinput() {
@@ -80,42 +154,7 @@ class MidiPlayer {
     return a;
   }
 
-  List<dynamic> _find(List<dynamic> arr, int time) {
-    final List<dynamic> result = <dynamic>[];
-
-    for (final i in arr) {
-      if (i["time"] == time) {
-        result.add(i["time"]);
-      }
-    }
-
-    return result;
-  }
-
-  void _press(String note) {
-    // 48 to 83
-    final key = letter[mapping[note]];
-
-    if (key != null) {
-      kbd.ki.wVk = key;
-      final result = SendInput(1, kbd, sizeOf<INPUT>());
-      if (result != TRUE)
-        print('Error: ${GetLastError()}'); // todo: Custom error handler
-    }
-  }
-
-  void _unpress(String note) {
-    // 48 to 83
-    final key = letter[mapping[note]];
-
-    if (key != null) {
-      kbd.ki.dwFlags = KEYEVENTF_KEYUP;
-      final result = SendInput(1, kbd, sizeOf<INPUT>());
-      if (result != TRUE)
-        print('Error: ${GetLastError()}'); // todo: Custom error handler
-    }
-  }
-
+  // Unused Code ? Debug?
   void _make_map() {
     String s = "zxcvbnmasdfghjqwertyu";
 
@@ -124,47 +163,65 @@ class MidiPlayer {
     });
   }
 
-  void play() {
-    playing = true;
-    sleep(Duration(milliseconds: delay));
+  // Isolate the player so that it does not block the main thread!
+  // Init 2 way communication with Isolate
+  Future<SendPort> initPlayerIsolate() async {
+    final Completer completer = Completer<SendPort>();
+    final ReceivePort isolateToMainStream = ReceivePort();
 
-    // Allocate pointer for keyboard control
-    kbd = calloc<INPUT>();
-    kbd.ref.type = INPUT_KEYBOARD;
-    final int previousPosition = position;
-
-    for (final index
-        in List<int>.generate(midiLength - previousPosition, (i) => i + 1)) {
-      if (playing) {
-        final Map<String, int> previousTrack = playTracks[index - 1];
-        final Map<String, int> currentTrack = playTracks[index];
-
-        for (final note in previousTrack.values) {
-          _unpress(note.toString());
-        }
-
-        for (final note in currentTrack.values) {
-          _press(note.toString());
-        }
-
-        position = index + previousPosition;
-        sleep(const Duration(milliseconds: 25));
+    isolateToMainStream.listen((dynamic data) {
+      if (data is SendPort) {
+        final SendPort mainToIsolateStream = data;
+        completer.complete(mainToIsolateStream);
       } else {
-        // Free pointer for keyboard control once we are done with playing
-        free(kbd);
-        break;
+        position = data['position'] as int;
+        _updatePosition(position);
+        // Debug anything else that is passed back
+        // print('[isolateToMainStream] $data');
       }
+    });
+
+    playerInstance =
+        await Isolate.spawn(playerIsolate, isolateToMainStream.sendPort);
+    return completer.future as Future<SendPort>;
+  }
+
+  Future<void> play(bool testMode) async {
+    playing = true;
+
+    if (testMode) {
+      ShellExecute(
+          0, TEXT('open'), TEXT('notepad.exe'), nullptr, nullptr, SW_SHOW);
+      Sleep(1000);
     }
+
+    Sleep(delay);
+
+    final SendPort mainToIsolateStream = await initPlayerIsolate();
+    Map<String, dynamic> sendData = <String, dynamic>{};
+    sendData['position'] = position;
+    sendData['midiLength'] = midiLength;
+    sendData['playTracks'] =
+        playTracks; // Possibly calculate the required playTracks here for optimized memory
+
+    mainToIsolateStream.send(sendData);
 
     playing = false;
   }
 
   void pause() {
     playing = false;
+    if (playerInstance != null) {
+      playerInstance?.kill(priority: Isolate.immediate);
+    }
   }
 
   void reset() {
     playing = false;
     position = 0;
+
+    if (playerInstance != null) {
+      playerInstance?.kill(priority: Isolate.immediate);
+    }
   }
 }
