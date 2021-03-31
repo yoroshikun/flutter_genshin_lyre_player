@@ -117,7 +117,11 @@ void playerIsolate(SendPort isolateToMainStream) {
       }
 
       Map<String, int> sendData = {};
-      sendData['position'] = index + resumePosition;
+      if (index + resumePosition == playTracks.length - 1) {
+        sendData['position'] = 0;
+      } else {
+        sendData['position'] = index + resumePosition;
+      }
       isolateToMainStream.send(sendData);
       Sleep(25);
     }
@@ -128,18 +132,18 @@ void playerIsolate(SendPort isolateToMainStream) {
 }
 
 class MidiPlayer {
-  bool playing = false;
   int position = 0;
   int delay = 10000;
   int midiLength = 0;
   double tickAccuracy = 0.0; // Is tickAccuracy needed here?
   List<List<int>> playTracks = [];
   void Function(int) _updatePosition;
+  void Function(bool) _updatePlaying;
   late SendPort mainToIsolateStream;
   Isolate? playerInstance;
 
   MidiPlayer(this.midiLength, this.tickAccuracy, this.playTracks,
-      this._updatePosition);
+      this._updatePosition, this._updatePlaying);
 
   // Unused Code ? Debug?
   Map<String, int> _dinput() {
@@ -176,6 +180,7 @@ class MidiPlayer {
       } else {
         position = data['position'] as int;
         _updatePosition(position);
+        _updatePlaying(position != 0); // Possible optimization here
         // Debug anything else that is passed back
         // print('[isolateToMainStream] $data');
       }
@@ -187,8 +192,6 @@ class MidiPlayer {
   }
 
   Future<void> play(bool testMode) async {
-    playing = true;
-
     if (testMode) {
       ShellExecute(
           0, TEXT('open'), TEXT('notepad.exe'), nullptr, nullptr, SW_SHOW);
@@ -205,19 +208,15 @@ class MidiPlayer {
         playTracks; // Possibly calculate the required playTracks here for optimized memory
 
     mainToIsolateStream.send(sendData);
-
-    playing = false;
   }
 
   void pause() {
-    playing = false;
     if (playerInstance != null) {
       playerInstance?.kill(priority: Isolate.immediate);
     }
   }
 
   void reset() {
-    playing = false;
     position = 0;
 
     if (playerInstance != null) {

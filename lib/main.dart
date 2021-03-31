@@ -102,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _reader = reader;
       });
       final player = MidiPlayer(reader.midiLength, reader.tickAccuracy,
-          reader.playTracks, _updatePosition);
+          reader.playTracks, _updatePosition, _updatePlaying);
 
       setState(() {
         _player = player;
@@ -141,6 +141,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _updatePosition(int position) {
     setState(() => _playerPosition = position);
+  }
+
+  void _updatePlaying(bool playing) {
+    setState(() => _playing = playing);
   }
 
   Widget welcomeChild(BuildContext context) => Column(
