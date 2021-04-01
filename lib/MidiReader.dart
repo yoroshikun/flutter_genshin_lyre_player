@@ -21,14 +21,12 @@ class MidiReader {
     return result;
   }
 
-  MidiReader(File file) {
-    midiFile = file;
-
+  MidiReader(this.midiFile) {
     // Construct a midi parser
     final parser = MidiParser();
 
     // Parse midi directly from file.
-    midiObject = parser.parseMidiFromFile(file);
+    midiObject = parser.parseMidiFromFile(midiFile);
 
     // Automatically set playback_speed
     try {
@@ -62,7 +60,7 @@ class MidiReader {
 
     midiObject.tracks.toList().asMap().forEach((i, track) {
       int lastTime = 0;
-      int lastOn = 0;
+      // int lastOn = 0; // Possible bug
 
       for (final message in track) {
         final Map<String, int> info = <String, int>{};
@@ -73,7 +71,7 @@ class MidiReader {
 
         if (message is NoteOnEvent || message is NoteOffEvent) {
           info['time'] = (info['time']! / tickAccuracy).round();
-          lastOn = info['time']!;
+          // lastOn = info['time']!;
 
           if (message is NoteOnEvent) {
             info['note'] = message.noteNumber;
@@ -87,13 +85,13 @@ class MidiReader {
       }
     });
 
-    endTracks.forEach((track) {
+    for (final track in endTracks) {
       midiLength = max(midiLength, track['time']! + 1);
-    });
+    }
 
-    List<int>.generate(midiLength, (i) => i).forEach((index) {
+    for (final index in List<int>.generate(midiLength, (i) => i)) {
       final result = _find(tracks, index);
       playTracks.add(result);
-    });
+    }
   }
 }

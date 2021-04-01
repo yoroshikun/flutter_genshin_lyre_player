@@ -4,7 +4,7 @@ A native flutter implementation of a midi to Genshin Lyre player.
 
 ## Features
 
-- Nativly compiled program, no pre-requisits required!
+- Native compiled program, no coding required!
 - Visual UI for ease of use
 - Easy to use select your .mid to play
 - Playback controls
@@ -54,3 +54,7 @@ Please credit this source when you use this program for content creation (Youtub
 This program is Opensource and freeware, please do not sell it.
 
 Please leave a star on the project if you enjoyed using it!
+
+### Troubleshooting
+
+This program requires the Windows Visual C++ Redistributables to run. If for some reason you do not have it you can download it [Here](https://www.microsoft.com/en-au/download/details.aspx?id=48145)
