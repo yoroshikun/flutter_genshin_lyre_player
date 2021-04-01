@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:filepicker_windows/filepicker_windows.dart';
 
-import 'MidiReader.dart';
 import 'MidiPlayer.dart';
+import 'MidiReader.dart';
 
 void main() {
   runApp(MyApp());
@@ -134,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _startPlayer(int position) {
-    _player?.play(_testMode);
+    _player?.play(testMode: _testMode);
     setState(() => _playing = true);
   }
 
@@ -296,9 +296,11 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            _reader == null ? welcomeChild(context) : loadedChild(context),
+            if (_reader == null)
+              welcomeChild(context)
+            else
+              loadedChild(context),
             SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(8.0),

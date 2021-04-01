@@ -66,8 +66,9 @@ void _press(String note, Pointer<INPUT> kbd) {
     kbd.ki.dwFlags = 0;
     kbd.ki.wVk = key;
     final result = SendInput(1, kbd, sizeOf<INPUT>());
-    if (result != TRUE)
-      print('Error: ${GetLastError()}'); // todo: Custom error handler
+    if (result != TRUE) {
+      //print('Error: ${GetLastError()}'); // todo: Custom error handler
+    }
   }
 }
 
@@ -79,8 +80,9 @@ void _unpress(String note, Pointer<INPUT> kbd) {
   if (key != null) {
     kbd.ki.dwFlags = KEYEVENTF_KEYUP;
     final result = SendInput(1, kbd, sizeOf<INPUT>());
-    if (result != TRUE)
-      print('Error: ${GetLastError()}'); // todo: Custom error handler
+    if (result != TRUE) {
+      // print('Error: ${GetLastError()}'); // todo: Custom error handler
+    }
   }
 }
 
@@ -116,7 +118,7 @@ void playerIsolate(SendPort isolateToMainStream) {
         _press(note.toString(), kbd);
       }
 
-      Map<String, int> sendData = {};
+      final Map<String, int> sendData = {};
       if (index + resumePosition == playTracks.length - 1) {
         sendData['position'] = 0;
       } else {
@@ -137,8 +139,8 @@ class MidiPlayer {
   int midiLength = 0;
   double tickAccuracy = 0.0; // Is tickAccuracy needed here?
   List<List<int>> playTracks = [];
-  void Function(int) _updatePosition;
-  void Function(bool) _updatePlaying;
+  final void Function(int) _updatePosition;
+  final void Function(bool) _updatePlaying;
   late SendPort mainToIsolateStream;
   Isolate? playerInstance;
 
@@ -146,26 +148,26 @@ class MidiPlayer {
       this._updatePosition, this._updatePlaying);
 
   // Unused Code ? Debug?
-  Map<String, int> _dinput() {
-    final Map<String, int> a = {};
-    int count = 36;
+  // Map<String, int> _dinput() {
+  //   final Map<String, int> a = {};
+  //   int count = 36;
 
-    while (count <= 84) {
-      // a[count.toString()] = input();
-      count++;
-    }
+  //   while (count <= 84) {
+  //     // a[count.toString()] = input();
+  //     count++;
+  //   }
 
-    return a;
-  }
+  //   return a;
+  // }
 
-  // Unused Code ? Debug?
-  void _make_map() {
-    String s = "zxcvbnmasdfghjqwertyu";
+  // // Unused Code ? Debug?
+  // void _make_map() {
+  //   const String s = "zxcvbnmasdfghjqwertyu";
 
-    mapping.keys.toList().asMap().forEach((i, k) {
-      mapping[k] = s[i];
-    });
-  }
+  //   mapping.keys.toList().asMap().forEach((i, k) {
+  //     mapping[k] = s[i];
+  //   });
+  // }
 
   // Isolate the player so that it does not block the main thread!
   // Init 2 way communication with Isolate
@@ -191,7 +193,7 @@ class MidiPlayer {
     return completer.future as Future<SendPort>;
   }
 
-  Future<void> play(bool testMode) async {
+  Future<void> play({bool testMode = false}) async {
     if (testMode) {
       ShellExecute(
           0, TEXT('open'), TEXT('notepad.exe'), nullptr, nullptr, SW_SHOW);
@@ -201,7 +203,7 @@ class MidiPlayer {
     Sleep(delay);
 
     final SendPort mainToIsolateStream = await initPlayerIsolate();
-    Map<String, dynamic> sendData = <String, dynamic>{};
+    final Map<String, dynamic> sendData = <String, dynamic>{};
     sendData['position'] = position;
     sendData['midiLength'] = midiLength;
     sendData['playTracks'] =
