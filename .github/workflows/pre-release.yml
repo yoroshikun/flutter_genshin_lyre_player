@@ -3,7 +3,7 @@ name: Pre-Release
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
 
 jobs:
   pre-release:
@@ -24,7 +24,7 @@ jobs:
       - run: flutter analyze
       # - run: flutter test
       - run: flutter build windows
-      - run: 7za a -tzip genshin_lyre.zip build\windows\runner\release
+      - run: C:\Windows\System32\tar.exe -c -f genshin_lyre.zip -C build\windows\runner\release .
       - uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: '${{ secrets.GITHUB_TOKEN }}'

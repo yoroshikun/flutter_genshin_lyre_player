@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - '*'
-      - '!master'
+      - '!main'
 
 jobs:
   lint-test:
@@ -23,5 +23,4 @@ jobs:
       - run: flutter config --enable-windows-desktop
       - run: flutter pub get
       - run: flutter analyze
-      - run: echo "test"
       # - run: flutter test
