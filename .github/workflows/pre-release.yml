@@ -33,5 +33,6 @@ jobs:
           automatic_release_tag: "latest"
           prerelease: true
           files: |
-            README.txt
+            README.md
+            LICENSE
             genshin_lyre.zip

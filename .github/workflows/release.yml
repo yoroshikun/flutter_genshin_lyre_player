@@ -32,5 +32,6 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            README.txt
+            README.md
+            LICENSE
             genshin_lyre.zip
