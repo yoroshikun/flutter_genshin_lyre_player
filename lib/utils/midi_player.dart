@@ -94,7 +94,10 @@ void playerIsolate(SendPort isolateToMainStream) {
   mainToIsolateStream.listen((dynamic data) {
     final int resumePosition = data['position'] as int;
     final int midiLength = data['midiLength'] as int;
+    final int delay = data['delay'] as int;
     final List<List<int>> playTracks = data['playTracks'] as List<List<int>>;
+
+    Sleep(delay);
 
     // Allocate pointer for keyboard control
     final Pointer<INPUT> kbd = calloc<INPUT>();
@@ -134,18 +137,18 @@ void playerIsolate(SendPort isolateToMainStream) {
 }
 
 class MidiPlayer {
+  int index;
   int position = 0;
   int delay = 10000;
   int midiLength = 0;
-  double tickAccuracy = 0.0; // Is tickAccuracy needed here?
   List<List<int>> playTracks = [];
-  final void Function(int) _updatePosition;
+  final void Function(int, int) _updatePosition;
   final void Function(bool) _updatePlaying;
   late SendPort mainToIsolateStream;
   Isolate? playerInstance;
 
-  MidiPlayer(this.midiLength, this.tickAccuracy, this.playTracks,
-      this._updatePosition, this._updatePlaying);
+  MidiPlayer(this.index, this.midiLength, this.playTracks, this._updatePosition,
+      this._updatePlaying);
 
   // Unused Code ? Debug?
   // Map<String, int> _dinput() {
@@ -181,7 +184,7 @@ class MidiPlayer {
         completer.complete(mainToIsolateStream);
       } else {
         position = data['position'] as int;
-        _updatePosition(position);
+        _updatePosition(index, position);
         _updatePlaying(position != 0); // Possible optimization here
         // Debug anything else that is passed back
         // print('[isolateToMainStream] $data');
@@ -200,12 +203,11 @@ class MidiPlayer {
       Sleep(1000);
     }
 
-    Sleep(delay);
-
     final SendPort mainToIsolateStream = await initPlayerIsolate();
     final Map<String, dynamic> sendData = <String, dynamic>{};
     sendData['position'] = position;
     sendData['midiLength'] = midiLength;
+    sendData['delay'] = delay;
     sendData['playTracks'] =
         playTracks; // Possibly calculate the required playTracks here for optimized memory
 
