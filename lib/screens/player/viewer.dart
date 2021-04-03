@@ -36,7 +36,11 @@ Widget midiViewer(BuildContext context,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '${reader?.midiFile.path.split("\\").removeLast().replaceFirst('.mid', '')}', // Name can be set by reader
+            reader?.midiFile.path
+                    .split("\\")
+                    .removeLast()
+                    .replaceFirst('.mid', '') ??
+                '', // Name can be set by reader
             style: Theme.of(context).typography?.subheader,
           ),
           addVerticalSpace(20),
@@ -105,7 +109,7 @@ Widget midiViewer(BuildContext context,
                         onChanged: (v) => setTickAccuracy!(player!.index, v),
                         onChangeEnd: (v) => reader.calculateTracks(),
                         // Label is the text displayed above the slider when the user is interacting with it.
-                        label: '${reader.tickAccuracy.toStringAsFixed(2)}',
+                        label: reader.tickAccuracy.toStringAsFixed(2),
                       ),
                       addVerticalSpace(10),
                       Text(
