@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:math';
-import 'dart_midi/dart_midi.dart';
+import '../dart_midi/dart_midi.dart';
 
 class MidiReader {
   late MidiFile midiObject;
@@ -28,7 +28,7 @@ class MidiReader {
     // Parse midi directly from file.
     midiObject = parser.parseMidiFromFile(midiFile);
 
-    // Automatically set playback_speed
+    // Automatically set tickAccuracy
     try {
       bool flag = false;
       int tempo = 0;
@@ -54,6 +54,11 @@ class MidiReader {
     }
 
     // Start Converting Tracks
+    calculateTracks();
+  }
+
+  void calculateTracks() {
+    playTracks.clear();
 
     final List<Map<String, int>> tracks = [];
     final List<Map<String, int>> endTracks = [];
