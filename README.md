@@ -1,6 +1,8 @@
-## Flutter Genshin Lyre Auto Player
+## Flutter Genshin Lyre MIDI Player
 
-A native flutter implementation of a midi to Genshin Lyre player.
+A native flutter implementation of a midi to Genshin Lyre player, following windows fluent UI design. Consider leaveing a star if the project was useful and contributing is always encouraged! Thanks!
+
+> Check out [sabihoshi](https://github.com/sabihoshi/)'s Fluent UI implementation of a [Genshin Lyre Player](https://github.com/sabihoshi/GenshinLyreMidiPlayer) written in C# if thats more your style!
 
 ![](screenshots/lightmode.png)
 ![](screenshots/darkmode.png)
@@ -50,6 +52,7 @@ It is highly recommended that you download the flutter dev tools for your IDE of
 ## Special Thanks
 
 - Misaka17032 for the original inspiration and lyre auto play python script
+- [sabishoshi](https://github.com/sabihoshi) and their project [Genshin Lyre MIDI Player](https://github.com/sabihoshi/GenshinLyreMidiPlayer) for exchange of ideas.
 - Dart_Midi package for native dart midi support
 - Flutter [Fluent UI](https://github.com/bdlukaa/fluent_ui) by bdlukaa
 - Flutter team, for making flutter!
