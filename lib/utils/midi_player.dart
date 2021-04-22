@@ -137,18 +137,18 @@ void playerIsolate(SendPort isolateToMainStream) {
 }
 
 class MidiPlayer {
-  int index;
+  String id;
   int position = 0;
   int delay = 10000;
   int midiLength = 0;
   List<List<int>> playTracks = [];
-  final void Function(int, int) _updatePosition;
-  final void Function(bool) _updatePlaying;
+  final void Function(String, int) _updatePosition;
+  final void Function({bool playing}) _setPlaying;
   late SendPort mainToIsolateStream;
   Isolate? playerInstance;
 
-  MidiPlayer(this.index, this.midiLength, this.playTracks, this._updatePosition,
-      this._updatePlaying);
+  MidiPlayer(this.id, this.midiLength, this.playTracks, this._updatePosition,
+      this._setPlaying);
 
   // Unused Code ? Debug?
   // Map<String, int> _dinput() {
@@ -184,8 +184,8 @@ class MidiPlayer {
         completer.complete(mainToIsolateStream);
       } else {
         position = data['position'] as int;
-        _updatePosition(index, position);
-        _updatePlaying(position != 0); // Possible optimization here
+        _updatePosition(id, position);
+        _setPlaying(playing: position != 0); // Possible optimization here
         // Debug anything else that is passed back
         // print('[isolateToMainStream] $data');
       }
