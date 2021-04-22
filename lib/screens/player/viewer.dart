@@ -1,7 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter_genshin_lyre/utils/midi_reader.dart';
-import 'package:flutter_genshin_lyre/utils/midi_player.dart';
-import 'package:flutter_genshin_lyre/utils/widget_functions.dart';
+import 'package:flutter_genshin_lyre/models/globals.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_genshin_lyre/models/workspace.dart';
+import 'package:flutter_genshin_lyre/components/widget_functions.dart';
 
 final delays = [
   '1000',
@@ -16,31 +17,18 @@ final delays = [
   '10000'
 ];
 
-Widget midiViewer(BuildContext context,
-        {MidiReader? reader,
-        MidiPlayer? player,
-        void Function(int, double)? setTickAccuracy,
-        void Function(int, int)? setDelay,
-        void Function(int, int)? setPosition,
-        void Function(int)? setIndex,
-        void Function(int)? clearWorkspace,
-        void Function(bool)? setTestMode,
-        void Function(int)? resetPlayer,
-        void Function(int)? startPlayer,
-        void Function(int)? pausePlayer,
-        bool testMode = false,
-        bool playing = false}) =>
+Widget midiViewer(BuildContext context, Workspace workspace,
+        {bool testMode = false, bool playing = false}) =>
     Container(
       padding: EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            reader?.midiFile.path
-                    .split("\\")
-                    .removeLast()
-                    .replaceFirst('.mid', '') ??
-                '', // Name can be set by reader
+            workspace.reader.midiFile.path
+                .split("\\")
+                .removeLast()
+                .replaceFirst('.mid', ''),
             style: Theme.of(context).typography?.subheader,
           ),
           addVerticalSpace(20),
@@ -60,15 +48,15 @@ Widget midiViewer(BuildContext context,
                         style: Theme.of(context).typography?.subtitle,
                       ),
                       addVerticalSpace(10),
-                      Text('Length: ${reader?.midiLength} notes',
+                      Text('Length: ${workspace.reader.midiLength} notes',
                           style: Theme.of(context)
                               .typography
                               ?.body), // Change to seconds
                       SizedBox(width: 10),
                       Text(
-                          'Tick Accuracy: ${reader?.tickAccuracy.toStringAsFixed(2)}',
+                          'Tick Accuracy: ${workspace.reader.tickAccuracy.toStringAsFixed(2)}',
                           style: Theme.of(context).typography?.body),
-                      Text('Current Position: ${player?.position}',
+                      Text('Current Position: ${workspace.player.position}',
                           style: Theme.of(context).typography?.body),
                       addVerticalSpace(10),
                       Text(
@@ -77,7 +65,9 @@ Widget midiViewer(BuildContext context,
                       ),
                       ToggleSwitch(
                         checked: testMode,
-                        onChanged: (v) => setTestMode!(v),
+                        onChanged: (v) => context
+                            .read(globalsNotifierProvider.notifier)
+                            .setTestMode(testMode: v),
                       )
                     ],
                   ),
@@ -105,11 +95,15 @@ Widget midiViewer(BuildContext context,
                       Slider(
                         min: 1,
                         max: 50,
-                        value: reader!.tickAccuracy,
-                        onChanged: (v) => setTickAccuracy!(player!.index, v),
-                        onChangeEnd: (v) => reader.calculateTracks(),
+                        value: workspace.reader.tickAccuracy,
+                        onChanged: (v) => context
+                            .read(workspacesNotifierProvider.notifier)
+                            .setTickAccuracy(workspace.id, v),
+                        onChangeEnd: (v) => context
+                            .read(workspacesNotifierProvider.notifier)
+                            .calculateTracks(workspace.id),
                         // Label is the text displayed above the slider when the user is interacting with it.
-                        label: reader.tickAccuracy.toStringAsFixed(2),
+                        label: workspace.reader.tickAccuracy.toStringAsFixed(2),
                       ),
                       addVerticalSpace(10),
                       Text(
@@ -128,10 +122,12 @@ Widget midiViewer(BuildContext context,
                                     child: Text('$delay ms'),
                                   ))
                               .toList(),
-                          value: player!.delay.toString(),
+                          value: workspace.player.delay.toString(),
                           onChanged: (value) {
                             if (value != null) {
-                              setDelay!(player.index, int.parse(value));
+                              context
+                                  .read(workspacesNotifierProvider.notifier)
+                                  .setDelay(workspace.id, int.parse(value));
                             }
                           },
                         ),
@@ -144,15 +140,21 @@ Widget midiViewer(BuildContext context,
                           builder: (context) {
                             return ContentDialog(
                               title: Text(
-                                  'Remove ${reader.midiFile.path.split("\\").removeLast().replaceFirst('.mid', '')}'),
+                                  'Remove ${workspace.reader.midiFile.path.split("\\").removeLast().replaceFirst('.mid', '')}'),
                               content: Text(
                                   'Are you sure you want to remove this midi file?'),
                               actions: [
                                 Button(
                                     text: Text('Remove'),
                                     onPressed: () {
-                                      setIndex!(0);
-                                      clearWorkspace!(player.index);
+                                      context
+                                          .read(
+                                              globalsNotifierProvider.notifier)
+                                          .setMenuIndex(0);
+                                      context
+                                          .read(workspacesNotifierProvider
+                                              .notifier)
+                                          .remove(workspace.id);
                                       Navigator.pop(context);
                                     })
                               ],
@@ -178,11 +180,13 @@ Widget midiViewer(BuildContext context,
                   ),
                   addVerticalSpace(10),
                   Slider(
-                    max: reader.midiLength.toDouble(),
-                    value: player.position.toDouble(),
-                    onChanged: (v) => setPosition!(player.index, v.floor()),
+                    max: workspace.reader.midiLength.toDouble(),
+                    value: workspace.player.position.toDouble(),
+                    onChanged: (v) => context
+                        .read(workspacesNotifierProvider.notifier)
+                        .updatePlayingPosition(workspace.id, v.floor()),
                     // Label is the text displayed above the slider when the user is interacting with it.
-                    label: '${player.position}',
+                    label: '${workspace.player.position}',
                   ),
                 ],
               ),
@@ -193,21 +197,30 @@ Widget midiViewer(BuildContext context,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               GestureDetector(
-                onTap: () => resetPlayer!(player.index),
+                onTap: () => context
+                    .read(workspacesNotifierProvider.notifier)
+                    .resetPlayer(workspace.id),
                 child: Icon(Icons.previous, size: 28),
               ),
               addHorisontalSpace(10),
               GestureDetector(
-                onTap: () => playing
-                    ? pausePlayer!(player.index)
-                    : startPlayer!(player.index),
+                onTap: () {
+                  final workspaceNotifier =
+                      context.read(workspacesNotifierProvider.notifier);
+                  playing
+                      ? workspaceNotifier.pausePlayer(workspace.id)
+                      : workspaceNotifier.startPlayer(workspace.id);
+                },
                 child: playing
                     ? Icon(Icons.pause, size: 48)
                     : Icon(Icons.play_circle, size: 48),
               ),
               addHorisontalSpace(10),
               GestureDetector(
-                onTap: () => setPosition!(player.index, player.position + 100),
+                onTap: () => context
+                    .read(workspacesNotifierProvider.notifier)
+                    .updatePlayingPosition(
+                        workspace.id, workspace.player.position + 100),
                 child: Icon(Icons.next, size: 28),
               )
             ],

@@ -1,5 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter_genshin_lyre/utils/widget_functions.dart';
+import 'package:flutter_genshin_lyre/components/widget_functions.dart';
 
 class WelcomeScreen extends StatelessWidget {
   @override

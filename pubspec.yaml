@@ -3,7 +3,7 @@ description: A flutter app for genshin lyre tools
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.1.0
+version: 1.2.0
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
@@ -12,15 +12,20 @@ dependencies:
   flutter:
     sdk: flutter
   filepicker_windows: ^2.0.0
-  provider: ^5.0.0
   win32: ^2.0.5
   fluent_ui: ^1.4.1
   shared_preferences: ^2.0.5
+  flutter_hooks: ^0.16.0-nullsafety.0
+  hooks_riverpod: ^0.14.0+1
+  uuid: ^3.0.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   pedantic: ^1.11.0
+  freezed: ^0.14.1+2
+  build_runner: ^1.12.2
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
